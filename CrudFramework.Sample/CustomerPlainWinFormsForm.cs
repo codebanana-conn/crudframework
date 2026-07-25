@@ -9,9 +9,9 @@ using Newtonsoft.Json.Linq;
 namespace CrudFramework.Sample
 {
     /// <summary>
-    /// Demo binding bằng control WinForms chuẩn (TextBox, NumericUpDown, CheckBox), không dùng
-    /// editor DevExpress. Mục tiêu: chứng minh EntityBindingProvider tự chọn property bind qua
-    /// adapter (Text/Value/Checked) thay vì phụ thuộc EditValue.
+    /// Demo binding bằng control WinForms chuẩn (TextBox, NumericUpDown, CheckBox, ComboBox),
+    /// không dùng editor DevExpress. Mục tiêu: chứng minh EntityBindingProvider tự chọn
+    /// property bind qua adapter (Text/Value/Checked/SelectedValue) thay vì phụ thuộc EditValue.
     /// </summary>
     public partial class CustomerPlainWinFormsForm : CrudFormBase
     {
@@ -23,6 +23,13 @@ namespace CrudFramework.Sample
             Client = client;
             BindingProvider = entityBindingProvider1;
             ErrorProvider = dxErrorProvider1;
+
+            // Demo ComboBox (SelectedValue): nạp danh sách nhóm khách hàng rồi bind CustomerCode
+            // qua adapter — StandardWinFormsControlAdapter chọn SelectedValue khi ComboBox có DataSource.
+            //var groups = new System.ComponentModel.BindingList<CustomerGroup>(CustomerGroup.DefaultGroups());
+            //comboGroup.DataSource = groups;
+            //comboGroup.DisplayMember = "Name";
+            //comboGroup.ValueMember = "Code";
 
             btnSave.Click += async (s, e) => await SaveAndCloseAsync();
             btnCancel.Click += (s, e) => Close();

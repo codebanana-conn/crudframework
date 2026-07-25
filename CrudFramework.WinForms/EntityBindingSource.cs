@@ -26,6 +26,7 @@ namespace CrudFramework.WinForms
         [Category("CrudFramework")]
         [Description("Kiểu entity (POCO có [DbColumn]) mà binding source phục vụ.")]
         [DefaultValue(null)]
+        [TypeConverter(typeof(EntityTypeConverter))]
         public Type EntityType
         {
             get { return _entityType; }

@@ -52,3 +52,18 @@ repository này. Đọc kỹ trước khi bắt đầu bất kỳ tác vụ nào
 
 - Repo phát triển trên máy không có .NET Framework 4.5 + DevExpress → khi không build được
   thực tế, phải **rà soát kỹ bằng mắt** để đảm bảo không lỗi biên dịch trước khi commit.
+- Agent LUÔN chạy `tools/check-all.sh` trước khi commit thay đổi code C# (xem Hạng mục 5).
+  Script bắt lỗi biên dịch Core thật + syntax-check WinForms/Sample — không thay thế build
+  Windows+DevExpress nhưng là lưới an toàn bổ sung.
+
+## 7. Đồng bộ `docs/developments.md`
+
+- Bất kỳ thay đổi nào ảnh hưởng tới quy trình tạo entity/form, thêm/sửa/xoá thành phần hạ tầng
+  binding (EntityBindingProvider, EntityBindingSource, IControlValueAdapter, CrudFormBase,
+  CrudListFormBase, DbCommandMode, EntityDataClient...), hoặc thay đổi cách Designer xử lý
+  generic base — đều BẮT BUỘC cập nhật `docs/developments.md` trong CÙNG commit.
+- Nếu thêm thành phần hạ tầng mới → phải thêm mục mô tả "dùng khi nào — vì sao — cách dùng —
+  ví dụ" vào `docs/developments.md` theo đúng format đã có.
+- Nếu thêm demo form mới trong `CrudFramework.Sample` → phải thêm dòng vào bảng danh mục demo
+  forms trong `docs/developments.md` (xem mục 8 trong file đó).
+- PR/commit thay đổi hạ tầng mà thiếu cập nhật `docs/developments.md` coi là chưa hoàn thành.

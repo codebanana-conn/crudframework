@@ -170,6 +170,77 @@ namespace CrudFramework.WinForms
         }
     }
 
+    /// <summary>
+    /// UITypeEditor kiểu dropdown cho property EntityType / EntityTypeName — hiện danh sách entity
+    /// type (FullName) trực quan trong Properties Grid. Tương tự BindingMemberUIEditor nhưng
+    /// cho phép chọn entity type thay vì property.
+    /// </summary>
+    public class EntityTypeUIEditor : UITypeEditor
+    {
+        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context)
+        {
+            return UITypeEditorEditStyle.DropDown;
+        }
+
+        public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value)
+        {
+            var edSvc = provider != null
+                ? provider.GetService(typeof(IWindowsFormsEditorService)) as IWindowsFormsEditorService
+                : null;
+            if (edSvc == null)
+                return value;
+
+            var types = DesignTimeTypeResolver.GetEntityTypes(context);
+            var list = new ListBox { BorderStyle = BorderStyle.None, IntegralHeight = true };
+            list.Items.Add("(none)");
+
+            // Nếu property là Type (EntityType) -> hiển thị Name, giá trị trả Type.
+            // Nếu property là string (EntityTypeName) -> hiển thị FullName, giá trị trả FullName.
+            bool isTypeProperty = value is Type;
+            foreach (var t in types.OrderBy(t => t.FullName))
+            {
+                if (isTypeProperty)
+                    list.Items.Add(t);
+                else
+                    list.Items.Add(t.FullName);
+            }
+
+            if (value != null)
+            {
+                int idx = list.Items.IndexOf(value);
+                if (idx >= 0) list.SelectedIndex = idx;
+                else
+                {
+                    // Fallback: tìm theo Name/FullName
+                    var currentName = isTypeProperty ? ((Type)value).FullName : (string)value;
+                    for (int i = 0; i < list.Items.Count; i++)
+                    {
+                        var itemStr = isTypeProperty
+                            ? (list.Items[i] is Type ? ((Type)list.Items[i]).FullName : null)
+                            : list.Items[i] as string;
+                        if (itemStr != null && string.Equals(itemStr, currentName, StringComparison.OrdinalIgnoreCase))
+                        { idx = i; break; }
+                    }
+                    if (idx >= 0) list.SelectedIndex = idx;
+                }
+            }
+
+            object picked = value;
+            list.Click += (s, e) =>
+            {
+                var sel = list.SelectedItem;
+                if (sel == null || (sel is string && (string)sel == "(none)"))
+                    picked = isTypeProperty ? (object)null : string.Empty;
+                else
+                    picked = sel;
+                edSvc.CloseDropDown();
+            };
+
+            edSvc.DropDownControl(list);
+            return picked ?? (isTypeProperty ? (object)null : string.Empty);
+        }
+    }
+
     internal static class DesignTimeTypeResolver
     {
         public static IList<Type> GetEntityTypes(ITypeDescriptorContext context)

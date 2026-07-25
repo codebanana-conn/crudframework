@@ -58,6 +58,7 @@ namespace CrudFramework.WinForms
         [Description("Kiểu entity (POCO có [DbColumn]). Danh sách property của kiểu này hiện trong dropdown BindingMember của mỗi control.")]
         [DefaultValue(null)]
         [TypeConverter(typeof(EntityTypeConverter))]
+        [Editor(typeof(EntityTypeUIEditor), typeof(UITypeEditor))]
         public Type EntityType
         {
             get
@@ -83,6 +84,8 @@ namespace CrudFramework.WinForms
         [Category("CrudFramework")]
         [Description("Tên type entity. Dùng khi EntityType dropdown không hiện type trong Designer.")]
         [DefaultValue("")]
+        [TypeConverter(typeof(EntityTypeNameConverter))]
+        [Editor(typeof(EntityTypeUIEditor), typeof(UITypeEditor))]
         public string EntityTypeName
         {
             get { return _entityTypeName; }

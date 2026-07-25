@@ -28,35 +28,28 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.entityBindingProvider1 = new CrudFramework.WinForms.EntityBindingProvider(this.components);
+            CrudFramework.WinForms.EntityBindingProvider entityBindingProvider1 = new CrudFramework.WinForms.EntityBindingProvider();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.textEdit1 = new DevExpress.XtraEditors.TextEdit();
             ((System.ComponentModel.ISupportInitialize)(this.textEdit1.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.entityBindingProvider1)).BeginInit();
             this.SuspendLayout();
-            //
-            // entityBindingProvider1
-            //
-            this.entityBindingProvider1.EntityTypeName = "CrudFramework.Sample.Customer";
-            this.entityBindingProvider1.UseAdapters = true;
-            //
+            // 
             // textBox1
-            //
+            // 
             this.textBox1.Location = new System.Drawing.Point(147, 55);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(100, 21);
             this.textBox1.TabIndex = 0;
-            //
+            // 
             // textEdit1
-            //
+            // 
             this.textEdit1.Location = new System.Drawing.Point(103, 200);
             this.textEdit1.Name = "textEdit1";
             this.textEdit1.Size = new System.Drawing.Size(100, 20);
             this.textEdit1.TabIndex = 1;
-            //
+            // 
             // Form1
-            //
+            // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
@@ -65,7 +58,6 @@
             this.Name = "Form1";
             this.Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)(this.textEdit1.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.entityBindingProvider1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -75,6 +67,5 @@
 
         private System.Windows.Forms.TextBox textBox1;
         private DevExpress.XtraEditors.TextEdit textEdit1;
-        private CrudFramework.WinForms.EntityBindingProvider entityBindingProvider1;
     }
 }

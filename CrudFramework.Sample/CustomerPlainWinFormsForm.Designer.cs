@@ -6,10 +6,12 @@ namespace CrudFramework.Sample
         private System.Windows.Forms.Label lblCode;
         private System.Windows.Forms.Label lblName;
         private System.Windows.Forms.Label lblBalance;
+        private System.Windows.Forms.Label lblGroup;
         private System.Windows.Forms.TextBox txtCode;
         private System.Windows.Forms.TextBox txtName;
         private System.Windows.Forms.NumericUpDown numBalance;
         private System.Windows.Forms.CheckBox chkActive;
+        private System.Windows.Forms.ComboBox comboGroup;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnCancel;
         private CrudFramework.WinForms.EntityBindingProvider entityBindingProvider1;
@@ -27,10 +29,12 @@ namespace CrudFramework.Sample
             this.lblCode = new System.Windows.Forms.Label();
             this.lblName = new System.Windows.Forms.Label();
             this.lblBalance = new System.Windows.Forms.Label();
+            this.lblGroup = new System.Windows.Forms.Label();
             this.txtCode = new System.Windows.Forms.TextBox();
             this.txtName = new System.Windows.Forms.TextBox();
             this.numBalance = new System.Windows.Forms.NumericUpDown();
             this.chkActive = new System.Windows.Forms.CheckBox();
+            this.comboGroup = new System.Windows.Forms.ComboBox();
             this.btnSave = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.entityBindingProvider1 = new CrudFramework.WinForms.EntityBindingProvider(this.components);
