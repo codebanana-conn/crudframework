@@ -2,6 +2,9 @@
 bin/
 obj/
 publish/
+
+# Thư mục tạm dùng cho tooling build (tools/*.sh) — KHÔNG commit
+tmp/
 *.user
 *.suo
 *.userosscache

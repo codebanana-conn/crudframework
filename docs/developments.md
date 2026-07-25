@@ -801,22 +801,28 @@ biên dịch tối thiểu — không thay thế build thật trên Windows+DevE
 ở tầng Core.
 
 ```bash
-# Chạy toàn bộ check:
-./tools/check-all.sh
+# Chạy toàn bộ check (Core build thật + WinForms/Sample syntax-check):
+bash tools/check-all.sh
 
-# Chỉ build Core (100% portable — không cần DevExpress):
-./tools/build-core.sh
+# Chỉ build Core (biên dịch NGỮ NGHĨA thật, không cần DevExpress):
+bash tools/build-core.sh
 
-# Chỉ syntax-check WinForms/Sample:
-./tools/syntax-check-winforms.sh
+# Chỉ rà soát cú pháp WinForms/Sample (hoặc truyền path/file cụ thể):
+bash tools/syntax-check.sh
 ```
 
+Trên Windows dev, build target net45 thật bằng MSBuild: `pwsh tools/build-core.ps1`
+(thêm `-All` để build cả solution khi máy có DevExpress v17.1).
+
 **Giới hạn trung thực:**
-- `build-core.sh`: build THẬT `CrudFramework.Core.dll` trên Linux — bắt 100% lỗi compile Core
-  (chỉ cần Newtonsoft.Json + Npgsql — có sẵn NuGet).
-- `syntax-check-winforms.sh`: chỉ parse cú pháp từng `.cs` — bắt lỗi typo/bracket/C# version,
-  KHÔNG bắt lỗi reference DevExpress/WinForms (thiếu DLL thật).
-- Build thật 100% cần Windows + Visual Studio + DevExpress v17.1.
+- `build-core.sh`: biên dịch **NGỮ NGHĨA thật** `CrudFramework.Core` bằng Roslyn `csc`
+  (langversion 6) với các DLL thật trong `Libraries/` (Npgsql 2.2.3, Newtonsoft.Json,
+  Mono.Security) + reference assemblies net8.0. Bắt lỗi kiểu/thiếu using/sai chữ ký.
+- `syntax-check.sh`: dùng tool Roslyn `tools/SyntaxCheck` parse từng `.cs` (LanguageVersion
+  CSharp6) — bắt lỗi cú pháp (typo, ngoặc lệch, feature > C#6), **KHÔNG** bắt lỗi reference
+  DevExpress/WinForms (thiếu DevExpress v17.1 + Windows Desktop reference pack).
+- `dotnet-env.sh`: tự cài .NET SDK 8 vào `~/.dotnet` (không cần root) nếu máy chưa có.
+- Build đầy đủ 100% (WinForms + Sample) vẫn cần Windows + Visual Studio + DevExpress v17.1.
 
 ---
 
