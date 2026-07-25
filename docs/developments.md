@@ -589,8 +589,24 @@ property `EntityType` không hiện dropdown chọn entity được (phải gõ 
 **Fix đã triển khai:**
 - Thêm `[TypeConverter]` + `[Editor]` lên `EntityBindingProvider.EntityTypeName`.
 - Thêm `[Editor]` lên `EntityBindingProvider.EntityType`.
-- Thêm `[TypeConverter]` lên `EntityBindingSource.EntityType`.
+- Thêm `[TypeConverter]` + `[Editor]` lên `EntityBindingSource.EntityType`.
 - Tạo class `EntityTypeUIEditor` (dropdown UITypeEditor cho EntityType + EntityTypeName).
+
+**Bugfix (kết quả điều tra tiếp HM3):** Lỗi khi chọn entity từ combo
+`Object of type 'System.String' cannot be converted to type 'System.Type'`.
+
+- **Nguyên nhân gốc rễ:** trong `EntityTypeUIEditor.EditValue`, biến `isTypeProperty` trước đây
+  xác định bằng `value is Type`. Ở trạng thái ban đầu `value == null` nên `null is Type == false`
+  → editor tưởng property là `string`, nạp các item là `FullName` (chuỗi) và trả **chuỗi** cho
+  property `EntityType` (kiểu `System.Type`) → Designer serializer ném lỗi ép kiểu string → Type.
+- **Cách fix:** xác định kiểu property từ `context.PropertyDescriptor.PropertyType`
+  (`typeof(Type).IsAssignableFrom(...)`) thay vì từ giá trị hiện tại. Với property kiểu `Type`,
+  item trong ListBox được bọc bằng lớp nội bộ `EntityTypeListItem` (giữ tham chiếu `Type` thật,
+  hiển thị `Type.Name` cho gọn) và **trả về đúng đối tượng `Type`**; với property kiểu `string`
+  (`EntityTypeName`) vẫn trả `FullName`. Việc chọn sẵn item hiện tại đối chiếu theo `FullName`
+  cho cả hai kiểu.
+- **Kết quả:** chọn entity từ dropdown `EntityType`/`EntityBindingSource.EntityType` không còn
+  ném lỗi ép kiểu; dropdown `EntityTypeName` vẫn trả FullName như cũ.
 
 **Giới hạn trung thực (kết quả điều tra HM3):**
 

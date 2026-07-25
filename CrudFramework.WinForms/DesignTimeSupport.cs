@@ -190,38 +190,49 @@ namespace CrudFramework.WinForms
             if (edSvc == null)
                 return value;
 
+            // QUAN TRỌNG: xác định kiểu property từ PropertyDescriptor, KHÔNG dựa vào giá trị hiện tại.
+            // Nếu dựa vào "value is Type" thì khi value == null (trạng thái ban đầu) sẽ ra false,
+            // editor tưởng là string property, trả về chuỗi cho property kiểu Type ->
+            // lỗi "Object of type 'System.String' cannot be converted to type 'System.Type'".
+            bool isTypeProperty = context != null
+                && context.PropertyDescriptor != null
+                && typeof(Type).IsAssignableFrom(context.PropertyDescriptor.PropertyType);
+
             var types = DesignTimeTypeResolver.GetEntityTypes(context);
             var list = new ListBox { BorderStyle = BorderStyle.None, IntegralHeight = true };
-            list.Items.Add("(none)");
+            list.Items.Add(EntityTypeListItem.None);
 
-            // Nếu property là Type (EntityType) -> hiển thị Name, giá trị trả Type.
-            // Nếu property là string (EntityTypeName) -> hiển thị FullName, giá trị trả FullName.
-            bool isTypeProperty = value is Type;
+            // Với property Type (EntityType): item bọc Type thật, hiển thị Name, trả về Type.
+            // Với property string (EntityTypeName): item là FullName (string), trả về FullName.
             foreach (var t in types.OrderBy(t => t.FullName))
             {
                 if (isTypeProperty)
-                    list.Items.Add(t);
+                    list.Items.Add(new EntityTypeListItem(t));
                 else
                     list.Items.Add(t.FullName);
             }
 
-            if (value != null)
+            // Chọn sẵn item hiện tại (đối chiếu theo FullName để an toàn cho cả 2 kiểu).
+            string currentName = null;
+            if (value is Type) currentName = ((Type)value).FullName;
+            else if (value is string) currentName = (string)value;
+
+            if (!string.IsNullOrEmpty(currentName))
             {
-                int idx = list.Items.IndexOf(value);
-                if (idx >= 0) list.SelectedIndex = idx;
-                else
+                for (int i = 0; i < list.Items.Count; i++)
                 {
-                    // Fallback: tìm theo Name/FullName
-                    var currentName = isTypeProperty ? ((Type)value).FullName : (string)value;
-                    for (int i = 0; i < list.Items.Count; i++)
+                    var item = list.Items[i];
+                    string itemFullName = null;
+                    var wrap = item as EntityTypeListItem;
+                    if (wrap != null) itemFullName = wrap.Type != null ? wrap.Type.FullName : null;
+                    else itemFullName = item as string; // "(none)" hoặc FullName
+
+                    if (itemFullName != null &&
+                        string.Equals(itemFullName, currentName, StringComparison.OrdinalIgnoreCase))
                     {
-                        var itemStr = isTypeProperty
-                            ? (list.Items[i] is Type ? ((Type)list.Items[i]).FullName : null)
-                            : list.Items[i] as string;
-                        if (itemStr != null && string.Equals(itemStr, currentName, StringComparison.OrdinalIgnoreCase))
-                        { idx = i; break; }
+                        list.SelectedIndex = i;
+                        break;
                     }
-                    if (idx >= 0) list.SelectedIndex = idx;
                 }
             }
 
@@ -229,15 +240,42 @@ namespace CrudFramework.WinForms
             list.Click += (s, e) =>
             {
                 var sel = list.SelectedItem;
-                if (sel == null || (sel is string && (string)sel == "(none)"))
-                    picked = isTypeProperty ? (object)null : string.Empty;
+                var wrap = sel as EntityTypeListItem;
+                if (wrap != null)
+                {
+                    // Property kiểu Type: item bọc Type. "(none)" -> Type null.
+                    picked = wrap.Type != null ? (object)wrap.Type : (object)null;
+                }
                 else
-                    picked = sel;
+                {
+                    // Property kiểu string: item là "(none)" hoặc FullName.
+                    var text = sel as string;
+                    picked = (text == null || text == "(none)") ? string.Empty : (object)text;
+                }
                 edSvc.CloseDropDown();
             };
 
             edSvc.DropDownControl(list);
             return picked ?? (isTypeProperty ? (object)null : string.Empty);
+        }
+
+        /// <summary>
+        /// Item bọc một <see cref="Type"/> để hiển thị trong ListBox dropdown: hiện <c>Name</c>
+        /// cho gọn nhưng vẫn giữ tham chiếu Type thật để trả về cho property kiểu Type.
+        /// </summary>
+        private sealed class EntityTypeListItem
+        {
+            /// <summary>Item đại diện "không chọn" (hiển thị "(none)").</summary>
+            public static readonly EntityTypeListItem None = new EntityTypeListItem(null);
+
+            public Type Type { get; private set; }
+
+            public EntityTypeListItem(Type type) { Type = type; }
+
+            public override string ToString()
+            {
+                return Type != null ? Type.Name : "(none)";
+            }
         }
     }
 

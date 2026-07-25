@@ -64,6 +64,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Customer.cs" />
+    <Compile Include="CustomerGroup.cs" />
+    <Compile Include="Product.cs" />
     <Compile Include="CustomerDetailForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -94,6 +96,39 @@
     <Compile Include="CustomerPlainWinFormsForm.Designer.cs">
       <DependentUpon>CustomerPlainWinFormsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="ErrorMappingDemoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ErrorMappingDemoForm.Designer.cs">
+      <DependentUpon>ErrorMappingDemoForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ProductEditForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProductEditForm.Designer.cs">
+      <DependentUpon>ProductEditForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ProductLookupForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProductLookupForm.Designer.cs">
+      <DependentUpon>ProductLookupForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ProductRawSqlForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProductRawSqlForm.Designer.cs">
+      <DependentUpon>ProductRawSqlForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ProductHybridForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ProductHybridForm.Designer.cs">
+      <DependentUpon>ProductHybridForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DemoLauncherForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -104,6 +139,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="CustomerDetailForm.resx">
+      <DependentUpon>CustomerDetailForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

@@ -28,14 +28,17 @@
         /// </summary>
         private void InitializeComponent()
         {
-            CrudFramework.WinForms.EntityBindingProvider entityBindingProvider1 = new CrudFramework.WinForms.EntityBindingProvider();
+            CrudFramework.WinForms.EntityBindingProvider entityBindingProvider = new CrudFramework.WinForms.EntityBindingProvider();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.textEdit1 = new DevExpress.XtraEditors.TextEdit();
             ((System.ComponentModel.ISupportInitialize)(this.textEdit1.Properties)).BeginInit();
             this.SuspendLayout();
+            entityBindingProvider.EntityType = typeof(CrudFramework.Sample.Customer);
+            entityBindingProvider.EntityTypeName = "CrudFramework.Sample.Customer";
             // 
             // textBox1
             // 
+            entityBindingProvider.SetBindingMember(this.textBox1, "Balance");
             this.textBox1.Location = new System.Drawing.Point(147, 55);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(100, 21);
@@ -43,6 +46,7 @@
             // 
             // textEdit1
             // 
+            entityBindingProvider.SetBindingMember(this.textEdit1, "CustomerCode");
             this.textEdit1.Location = new System.Drawing.Point(103, 200);
             this.textEdit1.Name = "textEdit1";
             this.textEdit1.Size = new System.Drawing.Size(100, 20);
