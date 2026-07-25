@@ -6,6 +6,8 @@ using System.Drawing.Design;
 using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Forms.Design;
+using CrudFramework.Core.Attributes;
+using CrudFramework.Core.Entities;
 
 namespace CrudFramework.WinForms
 {
@@ -97,11 +99,61 @@ namespace CrudFramework.WinForms
 
     /// <summary>
     /// TypeConverter cho property EntityType: hỗ trợ nhập/hiển thị Type.
-    /// (Trong design-time người dùng thường set qua code InitializeComponent hoặc gõ AssemblyQualifiedName;
-    /// converter này giúp hiển thị gọn tên type.)
+    /// Trong Properties Grid có thể chọn entity từ dropdown nếu entity nằm trong assembly đã load.
+    ///
+    /// Ví dụ: kéo EntityBindingProvider lên Form, chọn EntityType = Customer,
+    /// sau đó chọn BindingMember trên từng TextBox/CheckBox từ dropdown.
     /// </summary>
     public class EntityTypeConverter : TypeConverter
     {
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) { return true; }
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) { return false; }
+
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        {
+            var types = new List<Type>();
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type[] asmTypes;
+                try { asmTypes = asm.GetTypes(); }
+                catch { continue; }
+
+                foreach (var t in asmTypes)
+                {
+                    if (t == null || !t.IsClass || t.IsAbstract) continue;
+                    if (typeof(EntityBase).IsAssignableFrom(t) ||
+                        Attribute.GetCustomAttribute(t, typeof(DbTableAttribute)) != null)
+                        types.Add(t);
+                }
+            }
+
+            return new StandardValuesCollection(types
+                .OrderBy(t => t.FullName)
+                .ToArray());
+        }
+
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        {
+            return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+        }
+
+        public override object ConvertFrom(ITypeDescriptorContext context,
+            System.Globalization.CultureInfo culture, object value)
+        {
+            var text = value as string;
+            if (text != null)
+            {
+                if (string.IsNullOrWhiteSpace(text)) return null;
+                foreach (Type t in GetStandardValues(context))
+                    if (string.Equals(t.Name, text, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(t.FullName, text, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(t.AssemblyQualifiedName, text, StringComparison.OrdinalIgnoreCase))
+                        return t;
+                return Type.GetType(text, false);
+            }
+            return base.ConvertFrom(context, culture, value);
+        }
+
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
             return destinationType == typeof(string) || base.CanConvertTo(context, destinationType);
