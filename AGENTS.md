@@ -26,12 +26,8 @@ repository này. Đọc kỹ trước khi bắt đầu bất kỳ tác vụ nào
 
 ## 3. Quy tắc commit (TỰ ĐỘNG — KHÔNG HỎI LẠI)
 
-- Khi hoàn thành một checklist/hạng mục, **tự đánh giá** thay đổi có làm hỏng build không.
-- Nếu **an toàn cho build** → **tự commit và push lên remote `origin` ngay**, KHÔNG hỏi lại user.
 - Commit message rõ ràng, tiếng Việt, theo mẫu:
   `[Hạng mục N] <tóm tắt thay đổi>` hoặc `[docs] ...`, `[chore] ...`.
-- Nếu thay đổi **có nguy cơ hỏng build** hoặc còn dở dang → KHÔNG commit, ghi rõ lý do vào plan.
-- Trước khi push, chạy `update_git_token` để tránh token hết hạn.
 
 ## 4. Quyền tự chủ thực hiện
 
