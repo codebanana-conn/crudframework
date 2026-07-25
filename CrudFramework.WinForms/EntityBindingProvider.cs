@@ -187,7 +187,7 @@ namespace CrudFramework.WinForms
                     }
                 }
 
-                var binding = new Binding(bindProp, entity, member, true, updateMode);
+                var binding = new System.Windows.Forms.Binding(bindProp, entity, member, true, updateMode);
                 control.DataBindings.Add(binding);
 
                 string col;
