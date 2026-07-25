@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Forms.Design;
 using CrudFramework.Core.Json;
+using CrudFramework.WinForms.Binding;
 
 namespace CrudFramework.WinForms
 {
@@ -42,6 +43,8 @@ namespace CrudFramework.WinForms
         private object _dataSource;
         private string _bindProperty = "EditValue";
         private bool _initializing;
+        private bool _useAdapters = true;
+        private ControlValueAdapterRegistry _adapterRegistry;
 
         public EntityBindingProvider() { }
         public EntityBindingProvider(IContainer container)
@@ -71,6 +74,35 @@ namespace CrudFramework.WinForms
         {
             get { return _bindProperty; }
             set { _bindProperty = string.IsNullOrEmpty(value) ? "EditValue" : value; }
+        }
+
+        /// <summary>
+        /// Nếu true (mặc định): tự phát hiện property bind của MỖI control qua
+        /// <see cref="IControlValueAdapter"/> (TextBox→"Text", CheckBox→"Checked",
+        /// DevExpress→"EditValue"...), giúp bind được control WinForms thuần lẫn DevExpress
+        /// mà không cần set <see cref="BindProperty"/> thủ công.
+        /// Nếu false: dùng cứng <see cref="BindProperty"/> cho mọi control (hành vi cũ).
+        /// </summary>
+        [Category("CrudFramework")]
+        [Description("Tự phát hiện property bind theo loại control (WinForms/DevExpress) qua adapter. Tắt để dùng cứng BindProperty.")]
+        [DefaultValue(true)]
+        public bool UseAdapters
+        {
+            get { return _useAdapters; }
+            set { _useAdapters = value; }
+        }
+
+        /// <summary>
+        /// Registry adapter dùng để phát hiện property bind. Mặc định
+        /// <see cref="ControlValueAdapterRegistry.Default"/>. Gán registry riêng nếu cần
+        /// adapter tùy biến. Không serialize ra Designer.
+        /// </summary>
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public ControlValueAdapterRegistry AdapterRegistry
+        {
+            get { return _adapterRegistry ?? ControlValueAdapterRegistry.Default; }
+            set { _adapterRegistry = value; }
         }
 
         /// <summary>Entity instance đang được chỉnh sửa (gán ở runtime, thường bởi CrudFormBase).</summary>
@@ -141,9 +173,21 @@ namespace CrudFramework.WinForms
                 if (control == null || string.IsNullOrEmpty(member)) continue;
 
                 control.DataBindings.Clear();
-                var binding = new Binding(
-                    _bindProperty, entity, member, true,
-                    DataSourceUpdateMode.OnPropertyChanged);
+
+                // Xác định property bind + update mode: ưu tiên adapter (nếu bật), fallback BindProperty.
+                string bindProp = _bindProperty;
+                var updateMode = DataSourceUpdateMode.OnPropertyChanged;
+                if (_useAdapters)
+                {
+                    var adapter = AdapterRegistry.Resolve(control);
+                    if (adapter != null)
+                    {
+                        bindProp = adapter.GetBindProperty(control);
+                        updateMode = adapter.GetUpdateMode(control);
+                    }
+                }
+
+                var binding = new Binding(bindProp, entity, member, true, updateMode);
                 control.DataBindings.Add(binding);
 
                 string col;

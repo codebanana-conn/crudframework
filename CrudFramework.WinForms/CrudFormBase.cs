@@ -37,6 +37,14 @@ namespace CrudFramework.WinForms
         /// <summary>Client gọi function DB.</summary>
         public IDbFunctionClient Client { get; set; }
 
+        /// <summary>
+        /// (Tùy chọn) Client CRUD hợp nhất theo <see cref="Core.Data.DbCommandMode"/> — hỗ trợ
+        /// Function / RawSql / Hybrid. Nếu được gán, các thao tác Load/Save/Delete sẽ ưu tiên
+        /// dùng client này thay cho <see cref="Client"/> (function-only). Giữ <see cref="Client"/>
+        /// để tương thích ngược với code cũ.
+        /// </summary>
+        public IEntityDataClient EntityData { get; set; }
+
         /// <summary>Provider binding kéo-thả.</summary>
         public EntityBindingProvider BindingProvider { get; set; }
 
@@ -88,9 +96,11 @@ namespace CrudFramework.WinForms
             RaiseBeforeLoad(id);
 
             object entity;
-            if (id.HasValue && Client != null)
+            if (id.HasValue && (EntityData != null || Client != null))
             {
-                var json = await Client.GetAsync(_table.GetFunctionName("get"), id).ConfigureAwait(true);
+                var json = EntityData != null
+                    ? await EntityData.GetAsync(id).ConfigureAwait(true)
+                    : await Client.GetAsync(_table.GetFunctionName("get"), id).ConfigureAwait(true);
                 entity = json != null ? EntityJsonMapper.FromJObject(json, _entityType) : CreateEntity();
             }
             else
@@ -129,7 +139,8 @@ namespace CrudFramework.WinForms
         // ==================== SAVE ====================
         public virtual async Task<bool> SaveAsync()
         {
-            if (Client == null) throw new InvalidOperationException("Client chưa được gán.");
+            if (EntityData == null && Client == null)
+                throw new InvalidOperationException("Client/EntityData chưa được gán.");
             EnsureErrorAdapter();
             if (ErrorAdapter != null) ErrorAdapter.Clear();
 
@@ -138,7 +149,9 @@ namespace CrudFramework.WinForms
             OnBeforeSave(json);
             RaiseBeforeSave(json);
 
-            var result = await Client.UpsertAsync(_table.GetFunctionName("upsert"), json).ConfigureAwait(true);
+            var result = EntityData != null
+                ? await EntityData.UpsertAsync(json).ConfigureAwait(true)
+                : await Client.UpsertAsync(_table.GetFunctionName("upsert"), json).ConfigureAwait(true);
 
             bool success = result != null && result.Value<bool?>("success") == true;
             if (!success)
@@ -176,12 +189,15 @@ namespace CrudFramework.WinForms
         // ==================== DELETE ====================
         public virtual async Task DeleteAsync(int id)
         {
-            if (Client == null) throw new InvalidOperationException("Client chưa được gán.");
+            if (EntityData == null && Client == null)
+                throw new InvalidOperationException("Client/EntityData chưa được gán.");
 
             OnBeforeDelete(id);
             RaiseBeforeDelete(id);
 
-            var result = await Client.DeleteAsync(_table.GetFunctionName("delete"), id).ConfigureAwait(true);
+            var result = EntityData != null
+                ? await EntityData.DeleteAsync(id).ConfigureAwait(true)
+                : await Client.DeleteAsync(_table.GetFunctionName("delete"), id).ConfigureAwait(true);
             bool success = result != null && result.Value<bool?>("success") == true;
             if (!success)
             {
@@ -225,9 +241,28 @@ namespace CrudFramework.WinForms
     }
 
     /// <summary>
-    /// Generic convenience wrapper — kế thừa CrudFormBase, thêm typed Current.
-    /// KHÔNG dùng cho form cần designer (dùng CrudFormBase non-generic).
-    /// Dùng cho code-only / non-designer forms.
+    /// Wrapper generic tiện dụng — kế thừa <see cref="CrudFormBase"/>, bổ sung typed <c>Current</c>
+    /// và tự set <c>EntityType = typeof(TEntity)</c> trong constructor.
+    ///
+    /// ⚠️ CẢNH BÁO QUAN TRỌNG — KHÔNG dùng làm base class TRỰC TIẾP cho Form có Designer.
+    /// Windows Forms Designer KHÔNG hỗ trợ form kế thừa trực tiếp một base class generic; nếu
+    /// làm vậy Designer sẽ báo lỗi:
+    ///   "The base class 'CrudFramework.WinForms.CrudFormBase`1' could not be loaded..."
+    /// Đây là giới hạn của VS Designer, không phải bug của framework.
+    ///
+    /// CÁCH DÙNG ĐÚNG:
+    ///   • Form code-only (không mở bằng Designer): kế thừa trực tiếp CrudFormBase&lt;TEntity&gt; OK.
+    ///   • Form CẦN Designer: KHÔNG kế thừa generic trực tiếp. Hãy tạo 1 lớp trung gian
+    ///     non-generic rồi cho Form kế thừa lớp trung gian đó:
+    ///
+    ///     // Lớp trung gian non-generic để Designer load được —
+    ///     // Designer không hỗ trợ base class generic.
+    ///     public abstract class CustomerFormBase : CrudFormBase&lt;Customer&gt; { }
+    ///
+    ///     // Form Designer kế thừa lớp trung gian (non-generic) -> Designer mở được.
+    ///     public partial class CustomerEditForm : CustomerFormBase { }
+    ///
+    /// Xem thêm: docs/CrudFramework.Sample/README.md — mục "Checklist tạo Form mới".
     /// </summary>
     public class CrudFormBase<TEntity> : CrudFormBase where TEntity : EntityBase, new()
     {

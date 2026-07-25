@@ -54,6 +54,11 @@
     <Compile Include="Json\EntityJsonMapper.cs" />
     <Compile Include="Data\IDbFunctionClient.cs" />
     <Compile Include="Data\NpgsqlFunctionClient.cs" />
+    <Compile Include="Data\DbCommandMode.cs" />
+    <Compile Include="Data\ISqlCommandClient.cs" />
+    <Compile Include="Data\PostgresRawSqlBuilder.cs" />
+    <Compile Include="Data\NpgsqlSqlCommandClient.cs" />
+    <Compile Include="Data\EntityDataClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

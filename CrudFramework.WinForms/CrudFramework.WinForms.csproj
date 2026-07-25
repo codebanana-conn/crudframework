@@ -77,6 +77,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ErrorMapping\DxErrorProviderAdapter.cs" />
+    <Compile Include="Binding\IControlValueAdapter.cs" />
+    <Compile Include="Binding\BuiltInControlValueAdapters.cs" />
+    <Compile Include="Binding\ControlValueAdapterRegistry.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

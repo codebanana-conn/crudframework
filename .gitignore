@@ -59,3 +59,7 @@ coverage/
 # ── Git O-Alias helpers ───────────────────────
 .git-o-config
 .opushforce.message
+
+# ── CodeBanana agent system files ─────────────
+.codebanana/
+.coding-agent/
