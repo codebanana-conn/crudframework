@@ -45,6 +45,7 @@ namespace CrudFramework.WinForms
         private bool _initializing;
         private bool _useAdapters = true;
         private ControlValueAdapterRegistry _adapterRegistry;
+        private string _entityTypeName = string.Empty;
 
         public EntityBindingProvider() { }
         public EntityBindingProvider(IContainer container)
@@ -59,8 +60,38 @@ namespace CrudFramework.WinForms
         [TypeConverter(typeof(EntityTypeConverter))]
         public Type EntityType
         {
-            get { return _entityType; }
-            set { _entityType = value; }
+            get
+            {
+                if (_entityType == null && !string.IsNullOrWhiteSpace(_entityTypeName))
+                    _entityType = DesignTimeTypeResolver.FindType(_entityTypeName);
+                return _entityType;
+            }
+            set
+            {
+                _entityType = value;
+                _entityTypeName = value != null ? value.FullName : string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Tên type entity để cấu hình trong Designer khi property <see cref="EntityType"/> không hiện đủ
+        /// danh sách type do Visual Studio cache/shadow-copy. Có thể chọn từ dropdown hoặc gõ
+        /// FullName/AssemblyQualifiedName.
+        ///
+        /// Ví dụ: set <c>EntityTypeName = "CrudFramework.Sample.Customer"</c> trong Properties Grid.
+        /// </summary>
+        [Category("CrudFramework")]
+        [Description("Tên type entity. Dùng khi EntityType dropdown không hiện type trong Designer.")]
+        [DefaultValue("")]
+        public string EntityTypeName
+        {
+            get { return _entityTypeName; }
+            set
+            {
+                _entityTypeName = value ?? string.Empty;
+                var t = DesignTimeTypeResolver.FindType(value);
+                if (t != null) _entityType = t;
+            }
         }
 
         /// <summary>
@@ -155,14 +186,15 @@ namespace CrudFramework.WinForms
             _controlToColumn.Clear();
             if (entity == null) return;
 
-            var lookup = _entityType != null
-                ? EntityJsonMapper.GetColumnLookup(_entityType)
+            var entityType = EntityType;
+            var lookup = entityType != null
+                ? EntityJsonMapper.GetColumnLookup(entityType)
                 : null;
 
             // đảo lookup: propertyName -> columnName
             var propToCol = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            if (_entityType != null)
-                foreach (var c in EntityJsonMapper.GetColumns(_entityType))
+            if (entityType != null)
+                foreach (var c in EntityJsonMapper.GetColumns(entityType))
                     if (!c.Ignore && !propToCol.ContainsKey(c.PropertyName))
                         propToCol[c.PropertyName] = c.ColumnName;
 
@@ -219,8 +251,9 @@ namespace CrudFramework.WinForms
 
         internal IEnumerable<string> GetEntityMemberNames()
         {
-            if (_entityType == null) return Enumerable.Empty<string>();
-            return EntityJsonMapper.GetColumns(_entityType)
+            var entityType = EntityType;
+            if (entityType == null) return Enumerable.Empty<string>();
+            return EntityJsonMapper.GetColumns(entityType)
                 .Where(c => !c.Ignore)
                 .Select(c => c.PropertyName);
         }

@@ -112,40 +112,7 @@ namespace CrudFramework.WinForms
 
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            var types = new List<Type>();
-
-            var discovery = context != null
-                ? context.GetService(typeof(ITypeDiscoveryService)) as ITypeDiscoveryService
-                : null;
-            if (discovery != null)
-            {
-                foreach (Type t in discovery.GetTypes(typeof(EntityBase), false))
-                    AddEntityType(types, t);
-            }
-
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                Type[] asmTypes;
-                try { asmTypes = asm.GetTypes(); }
-                catch { continue; }
-
-                foreach (var t in asmTypes)
-                    AddEntityType(types, t);
-            }
-
-            return new StandardValuesCollection(types
-                .Distinct()
-                .OrderBy(t => t.FullName)
-                .ToArray());
-        }
-
-        private static void AddEntityType(IList<Type> types, Type t)
-        {
-            if (t == null || !t.IsClass || t.IsAbstract) return;
-            if (!typeof(EntityBase).IsAssignableFrom(t) &&
-                Attribute.GetCustomAttribute(t, typeof(DbTableAttribute)) == null)
-                return;
-            if (!types.Contains(t)) types.Add(t);
+            return new StandardValuesCollection(DesignTimeTypeResolver.GetEntityTypes(context).ToArray());
         }
 
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
@@ -160,12 +127,12 @@ namespace CrudFramework.WinForms
             if (text != null)
             {
                 if (string.IsNullOrWhiteSpace(text)) return null;
-                foreach (Type t in GetStandardValues(context))
+                foreach (Type t in DesignTimeTypeResolver.GetEntityTypes(context))
                     if (string.Equals(t.Name, text, StringComparison.OrdinalIgnoreCase) ||
                         string.Equals(t.FullName, text, StringComparison.OrdinalIgnoreCase) ||
                         string.Equals(t.AssemblyQualifiedName, text, StringComparison.OrdinalIgnoreCase))
                         return t;
-                return Type.GetType(text, false);
+                return DesignTimeTypeResolver.FindType(text);
             }
             return base.ConvertFrom(context, culture, value);
         }
@@ -184,6 +151,110 @@ namespace CrudFramework.WinForms
                 return t != null ? t.Name : string.Empty;
             }
             return base.ConvertTo(context, culture, value, destinationType);
+        }
+    }
+
+    /// <summary>
+    /// Converter chuỗi cho EntityTypeName: dropdown trả về FullName để Designer serialize ổn định.
+    /// </summary>
+    public class EntityTypeNameConverter : StringConverter
+    {
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) { return true; }
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) { return false; }
+
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        {
+            return new StandardValuesCollection(DesignTimeTypeResolver.GetEntityTypes(context)
+                .Select(t => t.FullName)
+                .ToArray());
+        }
+    }
+
+    internal static class DesignTimeTypeResolver
+    {
+        public static IList<Type> GetEntityTypes(ITypeDescriptorContext context)
+        {
+            var types = new List<Type>();
+
+            var discovery = context != null
+                ? context.GetService(typeof(ITypeDiscoveryService)) as ITypeDiscoveryService
+                : null;
+            if (discovery != null)
+            {
+                ICollection discovered;
+                try { discovered = discovery.GetTypes(typeof(object), false); }
+                catch { discovered = null; }
+                if (discovered != null)
+                    foreach (Type t in discovered)
+                        AddEntityType(types, t);
+            }
+
+            var host = context != null
+                ? context.GetService(typeof(IDesignerHost)) as IDesignerHost
+                : null;
+            var rootType = host != null && host.RootComponent != null
+                ? host.RootComponent.GetType()
+                : null;
+            if (rootType != null)
+                AddTypesFromAssembly(types, rootType.Assembly);
+
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                AddTypesFromAssembly(types, asm);
+
+            return types
+                .Distinct()
+                .OrderBy(t => t.FullName)
+                .ToList();
+        }
+
+        public static Type FindType(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return null;
+            foreach (var t in GetEntityTypes(null))
+                if (string.Equals(t.Name, text, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(t.FullName, text, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(t.AssemblyQualifiedName, text, StringComparison.OrdinalIgnoreCase))
+                    return t;
+            return Type.GetType(text, false);
+        }
+
+        private static void AddTypesFromAssembly(IList<Type> types, System.Reflection.Assembly asm)
+        {
+            Type[] asmTypes;
+            try { asmTypes = asm.GetTypes(); }
+            catch { return; }
+
+            foreach (var t in asmTypes)
+                AddEntityType(types, t);
+        }
+
+        private static void AddEntityType(IList<Type> types, Type t)
+        {
+            if (t == null || !t.IsClass || t.IsAbstract) return;
+            if (!IsEntityType(t)) return;
+            if (!types.Contains(t)) types.Add(t);
+        }
+
+        private static bool IsEntityType(Type t)
+        {
+            if (typeof(EntityBase).IsAssignableFrom(t)) return true;
+
+            for (var b = t.BaseType; b != null; b = b.BaseType)
+                if (b.FullName == "CrudFramework.Core.Entities.EntityBase")
+                    return true;
+
+            try
+            {
+                if (Attribute.GetCustomAttribute(t, typeof(DbTableAttribute)) != null)
+                    return true;
+            }
+            catch { }
+
+            foreach (var a in t.GetCustomAttributes(false))
+                if (a != null && a.GetType().FullName == "CrudFramework.Core.Attributes.DbTableAttribute")
+                    return true;
+
+            return false;
         }
     }
 }
