@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Design;
 using System.Drawing.Design;
 using System.Linq;
 using System.Windows.Forms;
@@ -112,6 +113,16 @@ namespace CrudFramework.WinForms
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
             var types = new List<Type>();
+
+            var discovery = context != null
+                ? context.GetService(typeof(ITypeDiscoveryService)) as ITypeDiscoveryService
+                : null;
+            if (discovery != null)
+            {
+                foreach (Type t in discovery.GetTypes(typeof(EntityBase), false))
+                    AddEntityType(types, t);
+            }
+
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 Type[] asmTypes;
@@ -119,17 +130,22 @@ namespace CrudFramework.WinForms
                 catch { continue; }
 
                 foreach (var t in asmTypes)
-                {
-                    if (t == null || !t.IsClass || t.IsAbstract) continue;
-                    if (typeof(EntityBase).IsAssignableFrom(t) ||
-                        Attribute.GetCustomAttribute(t, typeof(DbTableAttribute)) != null)
-                        types.Add(t);
-                }
+                    AddEntityType(types, t);
             }
 
             return new StandardValuesCollection(types
+                .Distinct()
                 .OrderBy(t => t.FullName)
                 .ToArray());
+        }
+
+        private static void AddEntityType(IList<Type> types, Type t)
+        {
+            if (t == null || !t.IsClass || t.IsAbstract) return;
+            if (!typeof(EntityBase).IsAssignableFrom(t) &&
+                Attribute.GetCustomAttribute(t, typeof(DbTableAttribute)) == null)
+                return;
+            if (!types.Contains(t)) types.Add(t);
         }
 
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
