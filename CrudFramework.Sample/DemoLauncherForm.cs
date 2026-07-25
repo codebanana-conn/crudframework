@@ -90,6 +90,9 @@ namespace CrudFramework.Sample
 
             AddButton(panel, "9. Product — Hybrid (RawSql + override ListSql)",
                 () => CreateSqlDemo(id => new ProductHybridForm(_sqlClient, id)));
+
+            AddButton(panel, "10. KSK — Phiếu khám sức khỏe (TT 25/2026/TT-BYT, 4 mẫu)",
+                () => new KskPhieuForm(_functionClient, null));
         }
 
         /// <summary>

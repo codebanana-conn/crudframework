@@ -842,5 +842,6 @@ Trên Windows dev, build target net45 thật bằng MSBuild: `pwsh tools/build-c
 | 8 | `ProductHybridForm` | Product | DbCommandMode.Hybrid | `ISqlOverrideProvider` |
 | 9 | `ErrorMappingDemoForm` | Customer | Error-mapping | `DxErrorProviderAdapter`, `FindControlByColumn` |
 | 10 | `DemoLauncherForm` | — | Launcher chọn form demo | Menu nút bấm, `Program.cs` entry point |
+| 11 | `KskPhieuForm` | KskPhieu | KSK theo TT 25/2026/TT-BYT (4 mẫu) | `XtraTabControl` (tab Tổng hợp + 4 tab con), show/hide tab theo `LoaiMauKsk`, `CheckEdit`/`ComboBoxEdit`, `DropDownButton` "In phiếu kết quả" (placeholder), `DbCommandMode.Function` |
 
 *(Bảng này sẽ cập nhật khi thêm form demo mới — xem quy tắc AGENTS.md mục 7).*

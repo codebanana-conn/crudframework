@@ -33,6 +33,8 @@
             this.textEdit1 = new DevExpress.XtraEditors.TextEdit();
             ((System.ComponentModel.ISupportInitialize)(this.textEdit1.Properties)).BeginInit();
             this.SuspendLayout();
+            entityBindingProvider.EntityType = typeof(CrudFramework.Sample.Customer);
+            entityBindingProvider.EntityTypeName = "CrudFramework.Sample.Customer";
             // 
             // textBox1
             // 
@@ -49,8 +51,6 @@
             this.textEdit1.Name = "textEdit1";
             this.textEdit1.Size = new System.Drawing.Size(100, 20);
             this.textEdit1.TabIndex = 1;
-            entityBindingProvider.EntityType = typeof(CrudFramework.Sample.Customer);
-            entityBindingProvider.EntityTypeName = "CrudFramework.Sample.Customer";
             // 
             // Form1
             // 

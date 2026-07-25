@@ -20,6 +20,8 @@ trung gian cho Designer.
 | `CustomerDetailForm.*` | Detail form (non-generic base `CrudFormBase`). |
 | `CustomerEditForm.*` | **Demo pattern generic base + lớp trung gian** (`CustomerFormBase`). |
 | `CustomerPlainWinFormsForm.*` | Demo binding bằng control WinForms chuẩn (`TextBox`, `NumericUpDown`, `CheckBox`). |
+| `KskPhieu.cs` | Entity demo phiếu KSK theo TT 25/2026/TT-BYT (4 mẫu, ~130 cột). |
+| `KskPhieuForm.*` | Demo form KSK: `XtraTabControl` (tab Tổng hợp + 4 tab con theo loại mẫu), show/hide tab theo `LoaiMauKsk`, `DropDownButton` "In phiếu kết quả" 4 mẫu (placeholder). |
 | `Form1.*` | Form khởi tạo mẫu. |
 
 ---
