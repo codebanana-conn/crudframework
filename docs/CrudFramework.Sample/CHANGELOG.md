@@ -5,9 +5,12 @@
 ## [Unreleased]
 
 ### Added
+- **`CustomerPlainWinFormsForm`** — demo binding bằng control WinForms chuẩn (`TextBox`,
+  `NumericUpDown`, `CheckBox`) qua `EntityBindingProvider.UseAdapters = true`.
 - **`CustomerFormBase` + `CustomerEditForm`** — demo pattern "generic base + lớp trung gian
   non-generic" để Windows Forms Designer load được form kế thừa `CrudFormBase<Customer>`.
 - Đăng ký `CustomerEditForm.cs` + `.Designer.cs` vào `CrudFramework.Sample.csproj`
+  và `CustomerPlainWinFormsForm.cs` + `.Designer.cs` vào `CrudFramework.Sample.csproj`
   (`<SubType>Form</SubType>` + `<DependentUpon>`).
 
 ### Docs

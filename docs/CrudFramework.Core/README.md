@@ -97,6 +97,38 @@ public sealed class OrderSqlOverrides : ISqlOverrideProvider
 > SQL override **bắt buộc** dùng named parameter (`:id`, `:p_payload`, `:p_filter`) và
 > **không** nối chuỗi giá trị.
 
+### Lọc danh sách an toàn (RawSql `ListAsync`)
+
+Ở chế độ RawSql/Hybrid, `ListAsync(filter)` tự dựng `WHERE` động **an toàn** từ `filter` (JObject):
+
+```csharp
+var filter = new JObject
+{
+    ["customer_name"] = "an",   // string  -> "customer_name" ILIKE '%an%'
+    ["is_active"]     = true,   // bool    -> "is_active" = :fN
+    ["balance"]       = 0,      // số      -> "balance" = :fN
+    ["birth_date"]    = null    // null    -> "birth_date" IS NULL
+};
+var rows = await data.ListAsync(filter);
+```
+
+Nguyên tắc an toàn của bộ lọc:
+- **Chỉ** key trùng với một cột đã whitelist (`SelectColumns`) mới vào `WHERE`; key lạ bị **bỏ qua**.
+- Mỗi giá trị bind vào 1 tham số riêng (`:f0`, `:f1`, …) — không nối chuỗi giá trị.
+- Chuỗi dùng `ILIKE` (tìm gần đúng, `%…%` đặt ở tham số, không ở SQL).
+
+### Khóa chính tùy biến — `KeyColumn`
+
+Mặc định khóa chính là `id`. Có thể đổi qua `[DbTable(KeyColumn = "...")]`:
+
+```csharp
+[DbTable("customers", KeyColumn = "customer_id")]
+public class Customer : EntityBase { ... }
+// RawSql: WHERE "customer_id" = :id ; ON CONFLICT ("customer_id") ...
+```
+
+`KeyColumn` cũng đi qua whitelist `[a-z0-9_]`; giá trị rỗng sẽ tự về `"id"`.
+
 ---
 
 ## 4. Nguyên tắc an toàn (bắt buộc)

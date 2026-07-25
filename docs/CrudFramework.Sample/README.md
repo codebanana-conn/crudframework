@@ -19,6 +19,7 @@ trung gian cho Designer.
 | `CustomerListForm.*` | List form riêng: grid tự sinh cột, filter keyword, thêm/sửa/xóa. |
 | `CustomerDetailForm.*` | Detail form (non-generic base `CrudFormBase`). |
 | `CustomerEditForm.*` | **Demo pattern generic base + lớp trung gian** (`CustomerFormBase`). |
+| `CustomerPlainWinFormsForm.*` | Demo binding bằng control WinForms chuẩn (`TextBox`, `NumericUpDown`, `CheckBox`). |
 | `Form1.*` | Form khởi tạo mẫu. |
 
 ---
@@ -74,6 +75,17 @@ public partial class CustomerEditForm : CustomerFormBase
 
 `Customer : EntityBase` dùng `SetField(...)` trong setter → `INotifyPropertyChanged` → binding
 2 chiều real-time với control.
+
+### 3.4 Binding bằng control WinForms chuẩn
+
+`CustomerPlainWinFormsForm` dùng `TextBox`, `NumericUpDown`, `CheckBox` thay cho editor DevExpress.
+`EntityBindingProvider.UseAdapters = true` tự chọn property bind theo control:
+
+```csharp
+entityBindingProvider1.SetBindingMember(txtCode, "CustomerCode"); // TextBox -> Text
+entityBindingProvider1.SetBindingMember(numBalance, "Balance");   // NumericUpDown -> Value
+entityBindingProvider1.SetBindingMember(chkActive, "IsActive");   // CheckBox -> Checked
+```
 
 ---
 

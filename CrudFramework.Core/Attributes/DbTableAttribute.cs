@@ -28,6 +28,7 @@ namespace CrudFramework.Core.Attributes
     public sealed class DbTableAttribute : Attribute
     {
         private string _schema;
+        private string _keyColumn = "id";
 
         /// <summary>Tên logic của entity, dùng để suy ra tên function. VD: "customers".</summary>
         public string Name { get; private set; }
@@ -52,12 +53,31 @@ namespace CrudFramework.Core.Attributes
             set { _schema = ValidateIdentifierOrNull(value, "Schema"); }
         }
 
+        /// <summary>
+        /// Tên cột khóa chính, dùng cho SQL thô (RawSql/Hybrid) ở mệnh đề WHERE/ON CONFLICT.
+        /// Mặc định "id". Chỉ chấp nhận identifier hợp lệ [a-z0-9_] (validate như <see cref="Schema"/>).
+        ///
+        /// VD: entity dùng khóa "customer_id":
+        /// <code>[DbTable("customers", KeyColumn = "customer_id")]</code>
+        /// -> SELECT ... WHERE "customer_id" = :id, ON CONFLICT ("customer_id") ...
+        /// </summary>
+        public string KeyColumn
+        {
+            get { return _keyColumn; }
+            set
+            {
+                var v = ValidateIdentifierOrNull(value, "KeyColumn");
+                _keyColumn = string.IsNullOrEmpty(v) ? "id" : v;
+            }
+        }
+
         public DbTableAttribute(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Table/entity name must not be empty.", "name");
             Name = name;
             FunctionPrefix = "fn_";
+            _keyColumn = "id";
         }
 
         /// <summary>

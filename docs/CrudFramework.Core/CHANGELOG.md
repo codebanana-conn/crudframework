@@ -24,8 +24,15 @@
 
 ### Notes
 - Không breaking change: `IDbFunctionClient` + Function mode giữ nguyên hành vi cũ.
-- **TODO:** RawSql `ListAsync` chưa dịch `filter` jsonb thành `WHERE` động — dự kiến bổ sung
-  bộ dịch filter an toàn (khóa theo cột whitelist) ở bản sau.
+
+### Improvements (2026-07-25, session cải tiến)
+- **`DbTableAttribute.KeyColumn`** — khóa chính cấu hình được (mặc định `"id"`, qua whitelist
+  `[a-z0-9_]`); lan tỏa vào `RawSqlRequest.KeyColumn` cho SELECT/UPSERT/DELETE.
+- **RawSql `ListAsync` — WHERE động an toàn:** thêm overload
+  `PostgresRawSqlBuilder.BuildListSql(req, filter, out IList<FilterParam>)` dựng `WHERE` chỉ từ
+  key trùng cột đã whitelist; string→`ILIKE`, số/bool→`=`, null→`IS NULL`. Mọi giá trị tham số
+  hóa (`:f0`, `:f1`, …). `NpgsqlSqlCommandClient.ListAsync` bind các tham số này.
+- Thêm `FilterParam` + `FilterParamKind` trong tầng Data.
 
 ## [0.1.0] — 2026-07-25
 

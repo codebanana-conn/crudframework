@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using CrudFramework.Core.Attributes;
 using CrudFramework.Core.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CrudFramework.Core.Data
 {
@@ -47,7 +48,7 @@ namespace CrudFramework.Core.Data
             var req = new RawSqlRequest
             {
                 QualifiedTable = qualified,
-                KeyColumn = "id",
+                KeyColumn = string.IsNullOrEmpty(table.KeyColumn) ? "id" : table.KeyColumn,
                 Overrides = overrides
             };
 
@@ -97,6 +98,110 @@ namespace CrudFramework.Core.Data
             return "SELECT " + JoinQuoted(req.SelectColumns)
                    + " FROM " + req.QualifiedTable;
         }
+
+        /// <summary>
+        /// SELECT ... với WHERE động AN TOÀN dựng từ <paramref name="filter"/> (jsonb).
+        ///
+        /// NGUYÊN TẮC AN TOÀN:
+        ///  - Chỉ những key của filter TRÙNG với một cột đã whitelist (<see cref="RawSqlRequest.SelectColumns"/>)
+        ///    mới được đưa vào WHERE. Key lạ (không phải cột) bị BỎ QUA hoàn toàn — không thể chèn SQL.
+        ///  - Mỗi giá trị được gán vào 1 named parameter riêng (:f0, :f1, ...) — KHÔNG nối chuỗi giá trị.
+        ///  - Tên cột lấy từ danh sách đã whitelist + bọc "..." nên an toàn với keyword.
+        ///
+        /// Ngữ nghĩa giá trị filter:
+        ///  - null            -> "col" IS NULL
+        ///  - chuỗi           -> "col" ILIKE :fN  (tìm gần đúng, bọc %...% ở tham số)
+        ///  - số/bool/khác    -> "col" = :fN      (so khớp chính xác)
+        ///
+        /// Nếu Hybrid có override ListSql -> trả override, KHÔNG dựng WHERE (client tự bind theo override).
+        /// Nếu filter rỗng/không có key hợp lệ -> tương đương <see cref="BuildListSql(RawSqlRequest)"/>.
+        ///
+        /// Ví dụ:
+        /// <code>
+        /// IList&lt;FilterParam&gt; ps;
+        /// var sql = PostgresRawSqlBuilder.BuildListSql(req, filter, out ps);
+        /// // SELECT ... FROM "customers" WHERE "customer_name" ILIKE :f0
+        /// </code>
+        /// </summary>
+        /// <param name="req">Request đã resolve (cột đã whitelist).</param>
+        /// <param name="filter">Filter dạng JObject (có thể null).</param>
+        /// <param name="parameters">Danh sách (tên tham số -> giá trị) để client bind. Không bao giờ null.</param>
+        public static string BuildListSql(RawSqlRequest req, JObject filter, out IList<FilterParam> parameters)
+        {
+            parameters = new List<FilterParam>();
+
+            if (req.Overrides != null)
+            {
+                var o = req.Overrides.ListSql(req);
+                if (!string.IsNullOrEmpty(o)) return o;
+            }
+
+            var baseSql = "SELECT " + JoinQuoted(req.SelectColumns) + " FROM " + req.QualifiedTable;
+            if (filter == null || filter.Count == 0 || req.SelectColumns == null || req.SelectColumns.Count == 0)
+                return baseSql;
+
+            // Tập cột hợp lệ (đã whitelist) để đối chiếu nhanh, không phân biệt hoa/thường.
+            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var c in req.SelectColumns) allowed.Add(c);
+
+            var clauses = new List<string>();
+            int idx = 0;
+            foreach (var prop in filter.Properties())
+            {
+                var key = prop.Name;
+                if (!allowed.Contains(key))
+                    continue; // key không phải cột hợp lệ -> bỏ qua (an toàn).
+
+                // Lấy đúng tên cột đã whitelist (giữ nguyên casing trong SelectColumns).
+                string col = key;
+                foreach (var c in req.SelectColumns)
+                    if (string.Equals(c, key, StringComparison.OrdinalIgnoreCase)) { col = c; break; }
+
+                var token = prop.Value;
+                if (token == null || token.Type == JTokenType.Null)
+                {
+                    clauses.Add(Quote(col) + " IS NULL");
+                    continue;
+                }
+
+                var pname = "f" + idx.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                idx++;
+
+                if (token.Type == JTokenType.String)
+                {
+                    // Tìm gần đúng, case-insensitive. Bọc %...% ở GIÁ TRỊ (tham số), không ở SQL.
+                    clauses.Add(Quote(col) + " ILIKE :" + pname);
+                    parameters.Add(new FilterParam(pname, "%" + token.Value<string>() + "%", FilterParamKind.Text));
+                }
+                else if (token.Type == JTokenType.Boolean)
+                {
+                    clauses.Add(Quote(col) + " = :" + pname);
+                    parameters.Add(new FilterParam(pname, token.Value<bool>(), FilterParamKind.Bool));
+                }
+                else if (token.Type == JTokenType.Integer)
+                {
+                    clauses.Add(Quote(col) + " = :" + pname);
+                    parameters.Add(new FilterParam(pname, token.Value<long>(), FilterParamKind.Integer));
+                }
+                else if (token.Type == JTokenType.Float)
+                {
+                    clauses.Add(Quote(col) + " = :" + pname);
+                    parameters.Add(new FilterParam(pname, token.Value<double>(), FilterParamKind.Float));
+                }
+                else
+                {
+                    // Kiểu khác (date...) -> so khớp bằng chuỗi, để driver/DB tự cast.
+                    clauses.Add(Quote(col) + " = :" + pname);
+                    parameters.Add(new FilterParam(pname, token.ToString(), FilterParamKind.Text));
+                }
+            }
+
+            if (clauses.Count == 0)
+                return baseSql;
+
+            return baseSql + " WHERE " + string.Join(" AND ", clauses.ToArray());
+        }
+
 
         /// <summary>
         /// UPSERT dựa trên jsonb payload, dùng ON CONFLICT theo key. Payload được nạp bằng

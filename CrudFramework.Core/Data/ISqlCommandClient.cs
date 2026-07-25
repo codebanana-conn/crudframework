@@ -86,4 +86,55 @@ namespace CrudFramework.Core.Data
         /// <summary>SQL cho Delete. Tham số: :id. Trả null để dùng mặc định.</summary>
         string DeleteSql(RawSqlRequest request);
     }
+
+    /// <summary>
+    /// Kiểu dữ liệu của một tham số filter, giúp client (Npgsql) chọn NpgsqlDbType phù hợp.
+    ///
+    /// Ví dụ: chuỗi filter dùng <see cref="Text"/> để client bind `NpgsqlDbType.Text`.
+    /// </summary>
+    public enum FilterParamKind
+    {
+        /// <summary>Chuỗi / ngày dạng text (dùng cho ILIKE hoặc so khớp text).</summary>
+        Text = 0,
+        /// <summary>Số nguyên (bind bigint).</summary>
+        Integer = 1,
+        /// <summary>Số thực (bind double).</summary>
+        Float = 2,
+        /// <summary>Boolean.</summary>
+        Bool = 3
+    }
+
+    /// <summary>
+    /// Một tham số WHERE động do <see cref="PostgresRawSqlBuilder"/> sinh ra khi dựng list SQL
+    /// từ filter. Tên tham số (VD "f0") tương ứng với ":f0" trong SQL; giá trị LUÔN được bind
+    /// qua NpgsqlParameter, không bao giờ nối chuỗi.
+    ///
+    /// Ví dụ:
+    /// <code>
+    /// var p = new FilterParam("f0", "%an%", FilterParamKind.Text);
+    /// // SQL tương ứng: WHERE "customer_name" ILIKE :f0
+    /// </code>
+    /// </summary>
+    public sealed class FilterParam
+    {
+        /// <summary>Tên tham số (không có dấu ":"). VD "f0".</summary>
+        public string Name { get; private set; }
+
+        /// <summary>Giá trị bind. Không bao giờ null (null đã xử lý bằng IS NULL trong SQL).</summary>
+        public object Value { get; private set; }
+
+        /// <summary>Kiểu dữ liệu để chọn NpgsqlDbType.</summary>
+        public FilterParamKind Kind { get; private set; }
+
+        /// <summary>
+        /// Tạo tham số filter để client bind vào SQL động.
+        /// Ví dụ: <c>new FilterParam("f0", true, FilterParamKind.Bool)</c>.
+        /// </summary>
+        public FilterParam(string name, object value, FilterParamKind kind)
+        {
+            Name = name;
+            Value = value;
+            Kind = kind;
+        }
+    }
 }

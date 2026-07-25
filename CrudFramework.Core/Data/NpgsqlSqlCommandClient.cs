@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,13 +56,20 @@ namespace CrudFramework.Core.Data
             if (request == null) throw new ArgumentNullException("request");
             return Task.Run(() =>
             {
-                // Bọc nhiều record thành jsonb array: SELECT COALESCE(json_agg(t),'[]') FROM (<list sql>) t
-                var inner = PostgresRawSqlBuilder.BuildListSql(request);
+                // Dựng list SQL kèm WHERE động AN TOÀN từ filter (chỉ theo cột đã whitelist).
+                IList<FilterParam> filterParams;
+                var inner = PostgresRawSqlBuilder.BuildListSql(request, filter, out filterParams);
+
+                // Bọc nhiều record thành jsonb array: SELECT COALESCE(jsonb_agg(t),'[]') FROM (<list sql>) t
                 var sql = "SELECT COALESCE(jsonb_agg(t), '[]'::jsonb) FROM (" + inner + ") t";
                 var json = (filter ?? new JObject()).ToString(Newtonsoft.Json.Formatting.None);
                 var scalar = ExecuteScalarText(sql, cmd =>
                 {
-                    // Chỉ bind :p_filter nếu SQL thực sự dùng (override có thể dùng).
+                    // Bind các tham số WHERE động (nếu có).
+                    foreach (var fp in filterParams)
+                        AddFilterParam(cmd, fp);
+
+                    // Tương thích override: chỉ bind :p_filter nếu SQL thực sự dùng.
                     if (sql.IndexOf(":p_filter", StringComparison.Ordinal) >= 0)
                         AddJsonParam(cmd, "p_filter", json);
                 }, ct);
@@ -163,6 +171,25 @@ namespace CrudFramework.Core.Data
         {
             var p = new NpgsqlParameter(name, NpgsqlDbType.Text);
             p.Value = jsonText ?? (object)DBNull.Value;
+            cmd.Parameters.Add(p);
+        }
+
+        /// <summary>
+        /// Bind một tham số WHERE động (<see cref="FilterParam"/>) với NpgsqlDbType phù hợp.
+        /// Giá trị đã được builder đảm bảo khác null.
+        /// </summary>
+        private static void AddFilterParam(NpgsqlCommand cmd, FilterParam fp)
+        {
+            NpgsqlDbType dbType;
+            switch (fp.Kind)
+            {
+                case FilterParamKind.Integer: dbType = NpgsqlDbType.Bigint; break;
+                case FilterParamKind.Float:   dbType = NpgsqlDbType.Double; break;
+                case FilterParamKind.Bool:    dbType = NpgsqlDbType.Boolean; break;
+                default:                      dbType = NpgsqlDbType.Text; break;
+            }
+            var p = new NpgsqlParameter(fp.Name, dbType);
+            p.Value = fp.Value ?? (object)DBNull.Value;
             cmd.Parameters.Add(p);
         }
 
